@@ -1,0 +1,43 @@
+#! /usr/bin/env python
+
+
+'''Main script to run PyCom, the not so lightweight, curses-based serial
+terminal
+'''
+
+import argparse
+
+from pycom.config import Config
+from pycom.pycom import PyCom
+from pycom.utils import logging_level
+
+__author__ = 'Jimmy Durand Wesolowski'
+__copyright__ = 'Copyright (C) 2022 Jimmy Durand Wesolowski'
+__license__ = 'GPL v2.0'
+__version__ = '1.0'
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-b', '--baudrate', type=int,
+                        help='port baudrate (ex: 115200)')
+    parser.add_argument('-c', '--config', help='JSON configuration path')
+    parser.add_argument('-p', '--port',
+                        help='port path (ex: /dev/ttyUSB0)')
+    parser.add_argument('-P', '--project',
+                        help='Project name to initialize command completion')
+    parser.add_argument('-v', '--verbose', action='count',
+                        help='increase verbosity')
+    parser.add_argument('input_files', nargs='*', help='optional input files')
+    args = parser.parse_args()
+
+    config = Config(args.config)
+    if args.baudrate is not None:
+        config.serial.baudrate = args.baudrate
+    if args.port is not None:
+        config.serial.port = args.port
+    logging_level(args.verbose)
+
+    com = PyCom(config)
+    com.input_load(args.input_files)
+    com.run()

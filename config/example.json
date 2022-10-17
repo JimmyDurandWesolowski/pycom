@@ -1,0 +1,100 @@
+{
+    "colors": true,
+    "history_save": true,
+    "project": "test",
+    "logging": {
+	"version": 1,
+	"formatters": {
+	    "brief": {
+		"format": "%(name)s: %(message)s"
+	    },
+	    "level":  {
+		"format": "%(name)s [%(levelname)s]: %(message)s"
+	    },
+	    "full":  {
+		"format": "%(asctime)s %(name)s [%(levelname)s]: %(message)s"
+	    }
+	},
+
+	"handlers": {
+	    "console": {
+		"class": "logging.StreamHandler",
+		"formatter": "brief",
+		"level": "WARNING",
+		"stream": "ext://sys.stdout"
+	    },
+	    "file_rotate": {
+		"class": "logging.FileHandler",
+		"filename": "pycom.log",
+		"formatter": "full",
+		"level": "DEBUG"
+	    }
+	},
+
+	"loggers": {
+	    "": {
+		"handlers": ["file_rotate"],
+		"level": "DEBUG"
+	    },
+
+	    "Command": {
+		"level": "INFO"
+	    },
+
+	    "TerminalOperation": {
+		"level": "INFO"
+	    },
+
+	    "TerminalSerial": {
+		"level": "DEBUG"
+	    },
+
+	    "TermWindow command": {
+		"level": "DEBUG"
+	    },
+
+	    "TermWindow error": {
+		"level": "INFO"
+	    },
+
+	    "TermWindow serial": {
+		"level": "DEBUG"
+	    }
+	},
+	"interface": [
+            {
+                "lines": 3,
+                "cols": "{cols}",
+                "name": "error",
+                "posy": "{lines} - 3",
+                "posx": 0,
+                "title": "Information"
+            },
+
+            {
+                "cols": "{cols} // 2",
+                "lines": "{lines} - 3",
+                "name": "serial",
+                "posy": 0,
+                "posx": "{cols} // 2",
+                "title": "Serial"
+            },
+
+            {
+                "cols": "{cols} // 2",
+		"cursor": true,
+                "lines": "{lines} - 3",
+                "name": "command",
+                "posy": 0,
+                "posx": 0,
+                "prompt": true,
+                "title": "Commands"
+            }
+        ],
+
+	"serial": {
+	    "baudrate": 115200,
+	    "port": "/dev/ttyUSB0"
+	}
+    }
+}

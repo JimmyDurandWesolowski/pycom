@@ -1,0 +1,9 @@
+*~
+.coverage
+.*.pycache
+*.egg-info
+*.log
+*.log.*
+*.pyc
+__pycache__/
+venv/
