@@ -1,0 +1,14 @@
+* TODO Implementation [0/3]
+** TODO History search
+** TODO Completion
+** TODO Serial rate limiting
+
+* TODO Bugs [0/2]
+** TODO Characters after the cursor are invisible
+** TODO Information not cleared with new input
+
+* TODO QoL [0/1]
+** TODO Allow resizing the interface (key code 410)
+
+* Ideas
+** Merge back the command and serial window, potentially the Information as well
