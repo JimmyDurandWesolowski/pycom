@@ -41,6 +41,10 @@
 		"level": "INFO"
 	    },
 
+	    "PyCom": {
+		"level": "DEBUG"
+	    },
+
 	    "TerminalOperation": {
 		"level": "INFO"
 	    },
@@ -60,41 +64,43 @@
 	    "TermWindow serial": {
 		"level": "DEBUG"
 	    }
-	},
-	"interface": [
-            {
-                "lines": 3,
-                "cols": "{cols}",
-                "name": "error",
-                "posy": "{lines} - 3",
-                "posx": 0,
-                "title": "Information"
-            },
-
-            {
-                "cols": "{cols} // 2",
-                "lines": "{lines} - 3",
-                "name": "serial",
-                "posy": 0,
-                "posx": "{cols} // 2",
-                "title": "Serial"
-            },
-
-            {
-                "cols": "{cols} // 2",
-		"cursor": true,
-                "lines": "{lines} - 3",
-                "name": "command",
-                "posy": 0,
-                "posx": 0,
-                "prompt": true,
-                "title": "Commands"
-            }
-        ],
-
-	"serial": {
-	    "baudrate": 115200,
-	    "port": "/dev/ttyUSB0"
 	}
+    },
+
+    "interface": [
+        {
+            "lines": 3,
+            "cols": "{cols}",
+            "name": "error",
+            "posy": "{lines} - 3",
+            "posx": 0,
+            "title": "Information"
+        },
+
+        {
+            "cols": "{cols} // 2",
+            "lines": "{lines} - 3",
+            "name": "serial",
+            "posy": 0,
+            "posx": "{cols} // 2",
+            "title": "Serial"
+        },
+
+        {
+            "cols": "{cols} // 2",
+	    "cursor": true,
+            "lines": "{lines} - 3",
+            "name": "command",
+            "posy": 0,
+            "posx": 0,
+            "prompt": true,
+            "title": "Commands"
+        }
+    ],
+
+    "serial": {
+	"baudrate": 115200,
+	"port": "/dev/ttyUSB0",
+	"ratelimit": 1
     }
 }

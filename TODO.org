@@ -1,14 +1,34 @@
-* TODO Implementation [0/3]
+* TODO Implementation [2/5]
+** DONE Manage modification of a command from history
 ** TODO History search
 ** TODO Completion
+** DONE Sending the command data to UART
 ** TODO Serial rate limiting
 
-* TODO Bugs [0/2]
-** TODO Characters after the cursor are invisible
-** TODO Information not cleared with new input
+* TODO Tests [6/10]
+** DONE command
+** TODO completion
+** DONE history
+** DONE mode
+** TODO pycom
+** TODO serial
+** TODO term_win
+** DONE terminal
+** DONE utils
+** DONE window
 
-* TODO QoL [0/1]
-** TODO Allow resizing the interface (key code 410)
+* TODO Bugs [2/6]
+** TODO Information not cleared with new input
+** TODO Handle lines longer than COL * LINE
+** DONE Fix space handling
+** DONE Fix the serial window title display
+** TODO Going back on a full history is not showing the previous lines
+** TODO The content of a line at the cursor or on its right is not shown
+
+* TODO QoL [1/3]
+** DONE Allow configuring the interface layout
+** TODO Allow left and right in history to select a line
+** TODO Update the interface size when resizing the Linux terminal (key code 410)
 
 * Ideas
 ** Merge back the command and serial window, potentially the Information as well

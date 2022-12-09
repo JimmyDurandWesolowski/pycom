@@ -2,14 +2,9 @@
 
 import logging
 import os
-import queue
-import select
-import sys
 import threading
 import traceback
-from typing import Dict, List, Optional, Union
-
-import serial  # type: ignore
+from typing import Dict, List, Optional
 
 import pycom.command
 import pycom.completion
@@ -17,10 +12,11 @@ import pycom.config
 import pycom.cursorpos
 import pycom.history
 from pycom.mode import Mode
+from pycom.serial_handler import SerialHandler
 import pycom.terminal
 import pycom.term_win
 import pycom.utils
-from pycom.utils import FileType
+from pycom.utils import FileType, stdin_readlines
 
 __author__ = 'Jimmy Durand Wesolowski'
 __copyright__ = 'Copyright (C) 2022 Jimmy Durand Wesolowski'
@@ -40,75 +36,11 @@ TITLE_MODE = {
 }
 
 
-class TerminalSerial(threading.Thread):
-    '''Thread class handling the serial communication retrieval and
-    forwarding
-    '''
-    def __init__(self, interface, config, condition):
-        super().__init__()
-        self.config = config
-        self.condition = condition
-        self.interface = interface
-        self.logger = logging.getLogger(self.__class__.__name__)
-        self.queue: queue.Queue = queue.Queue()
-
-    @staticmethod
-    def _serial_get(serial_port) -> None:
-        try:
-            data = serial_port.read_until()
-        except serial.SerialException:
-            return None
-        if not data:
-            return None
-        return data.decode('ascii', 'ignore')
-
-    def _queue_get(self, serial_port) -> None:
-        try:
-            data = self.queue.get_nowait()
-        except queue.Empty:
-            return
-        try:
-            self.logger.info('Sending "%s" on serial', data)
-            serial_port.write((str(data) + os.linesep).encode('ascii'))
-        except serial.SerialException as exc:
-            self.logger.warning('error writing serial: %s', exc)
-
-    def run(self) -> None:
-        self.logger.debug('Starting serial')
-        window = self.interface.windows['serial']
-        serial_port = serial.Serial(self.config.serial.port,
-                                    self.config.serial.baudrate,
-                                    timeout=.1)
-        lines: List[pycom.term_win.TermLine] = []
-        while not self.condition.is_set():
-            self._queue_get(serial_port)
-            data = self._serial_get(serial_port)
-            if data is None:
-                continue
-            if not lines:
-                lines.append(window.line_create(data.rstrip()))
-            else:
-                lines[-1] += data.rstrip()
-            if data[-1] == '\n':
-                lines.append(window.line_create())
-            self.logger.info('%d lines', len(lines))
-            window.write(lines)
-            self.interface.redraw()
-
-    def write(self, content: Union[bytes, bytearray, List[str], str]) -> None:
-        '''Write to the serial port and serial terminal'''
-        if isinstance(content, list):
-            content = os.linesep.join(content)
-        if isinstance(content, (bytearray, bytes)):
-            content = content.decode('utf-8', 'ignore')
-        self.queue.put(content)
-
-
 class TerminalOperation(pycom.terminal.Terminal):
     '''Terminal handling the command editing'''
     def __init__(self, interface: pycom.term_win.Interface,
                  window: pycom.term_win.TermWindow,
-                 serial_port,
+                 serial_handler,
                  config: pycom.config.Config,
                  condition: threading.Event):
         self.cmd_table: Dict[Mode, pycom.command.Command]
@@ -122,7 +54,7 @@ class TerminalOperation(pycom.terminal.Terminal):
         self.logger: logging.Logger = logging.getLogger(
             self.__class__.__name__)
         self.mode: Mode = Mode.NORMAL
-        self.serial = serial_port
+        self.serial = serial_handler
         self.window: pycom.term_win.TermWindow = window
 
         self.cmd_table = {
@@ -268,15 +200,15 @@ class PyCom:
         self.config.interface_parse(lines=lines, cols=cols)
         for params in self.config.interface:
             interface.window_add(**params)
-        serial_port = TerminalSerial(interface, self.config, event)
+        serial_handler = SerialHandler(interface, self.config, event)
         opterm = TerminalOperation(interface, interface.windows['command'],
-                                   serial_port, self.config, event)
+                                   serial_handler, self.config, event)
         if self.input_content:
             self.logger.info('Received input content: %s', self.input_content)
             opterm.write(self.input_content)
 
         interface.clear()
-        serial_port.start()
+        serial_handler.start()
         while not event.is_set():
             opterm.update()
             self.logger.debug('Queue %d',
@@ -297,11 +229,9 @@ class PyCom:
                 with open(filename, encoding='ascii') as input_fd:
                     self.input_content += input_fd.readlines()
 
-        if select.select([sys.stdin, ], [], [], 0.0)[0]:
-            self.input_content += sys.stdin.readlines()
-            with open("/dev/tty", encoding='ascii') as ttyfd:
-                os.dup2(ttyfd.fileno(), 0)
-            return True
+        stdin_lines = stdin_readlines()
+        if stdin_lines is not None:
+            self.input_content += stdin_lines
         self.logger.info('No input from stdin')
         return False
 

@@ -3,7 +3,7 @@
 from setuptools import setup
 
 setup(name='pycom',
-      version='1.0',
+      version='0.1',
       # list folders, not files
       packages=[
           'pycom',

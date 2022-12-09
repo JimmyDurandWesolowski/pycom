@@ -6,7 +6,9 @@ import json
 import logging
 import operator
 import os
-from typing import TYPE_CHECKING, Any, Optional, Sequence, Union
+import select
+import sys
+from typing import TYPE_CHECKING, Any, List, Optional, Sequence, Union
 
 __author__ = 'Jimmy Durand Wesolowski'
 __copyright__ = 'Copyright (C) 2022 Jimmy Durand Wesolowski'
@@ -124,6 +126,21 @@ def project_load_json(filename: str, toolname: Optional[str] = None,
             return json.load(file_fd)
     except (FileNotFoundError, OSError):
         return default
+
+
+def stdin_readlines() -> Union[List[str], None]:
+    '''Detects content on stdin, reads its lines and duplicates it'''
+    # Based on https://stackoverflow.com/a/17735803
+    # if sys.stdin.isatty()):
+    # Based on https://stackoverflow.com/a/3763257
+    if not select.select([sys.stdin, ], [], [], 0.0)[0]:
+        return None
+    input_content = sys.stdin.readlines()
+    # Duplicate stdin to be able to read stdin again
+    # Based on https://stackoverflow.com/a/4000997
+    with open("/dev/tty", encoding='ascii') as ttyfd:
+        os.dup2(ttyfd.fileno(), 0)
+    return input_content
 
 
 # Inspired from

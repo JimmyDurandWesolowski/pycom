@@ -1,4 +1,5 @@
 from copy import deepcopy
+import datetime
 import json
 import logging
 import logging.config
@@ -112,6 +113,35 @@ class TestConfig(TestCommon):
         self.assertEqual(config.serial.stopbits,
                          Config.DEFAULT['serial']['stopbits'])
         self.assertEqual(config.serial.port, '/dev/ttyS0')
+
+    def test_serial_baudrate(self):
+        self._conf_file(baudrate=5000, ratelimit=1000)
+        config = Config()
+        self.assertEqual(config.serial.baudrate, 5000)
+        self.assertEqual(config.serial.ratelimit,
+                         datetime.timedelta(microseconds=1000))
+
+    def test_serial_ratelimit(self):
+        self._conf_file(ratelimit=1)
+        config = Config()
+        self.assertEqual(config.serial.ratelimit,
+                         datetime.timedelta(seconds=1))
+
+        self._conf_file(ratelimit=1000)
+        config = Config()
+        self.assertEqual(config.serial.ratelimit,
+                         datetime.timedelta(milliseconds=1))
+
+        self._conf_file(ratelimit=1000000, baudrate=1000000)
+        config = Config()
+        self.assertEqual(config.serial.ratelimit,
+                         datetime.timedelta(microseconds=1))
+
+    def test_serial_baudrate_ratelimit(self):
+        self._conf_file(baudrate=500, ratelimit=1000)
+        config = Config()
+        self.assertEqual(config.serial.baudrate, 500)
+        self.assertEqual(config.serial.ratelimit, None)
 
     def test_overwrite_config_args_logging(self):
         log_conf_up = {

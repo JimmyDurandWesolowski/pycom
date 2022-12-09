@@ -2,11 +2,13 @@
 
 import collections
 from copy import deepcopy
+import datetime
 import io
 import json
+import logging
 import logging.config as logging_config
 import tempfile
-from typing import Any, Dict, NamedTuple
+from typing import Any, Dict, NamedTuple, Optional
 
 import serial  # type: ignore
 
@@ -103,22 +105,39 @@ class Config:
             'bytesize': 8,
             'port': '/dev/ttyUSB0',
             'parity': _PARITY_MAP['none'],
+            'ratelimit': 100000,
             'stopbits': 1
         }
     }
     DEFAULT_CONFIG = 'config.json'
 
-    class SerialConfig(collections.namedtuple(
-            'SerialConfig',
-            ['baudrate', 'bytesize', 'parity', 'port', 'stopbits'])):
-        '''Namedtuple for serial port configuration'''
-        def __new__(cls, **params):
-            parity = params.pop('parity')
+    class SerialConfig:
+        '''Class for serial port configuration'''
+
+        FIELDS = [
+            'baudrate', 'bytesize', 'parity', 'port', 'ratelimit', 'stopbits'
+        ]
+        def __init__(self,
+                     baudrate: Optional[int] = None,
+                     bytesize: Optional[int]=None,
+                     parity: Optional[str] = None,
+                     port: Optional[str] = None,
+                     ratelimit: Optional[int] = None,
+                     stopbits: Optional[int] = None):
+            self.baudrate = baudrate
+            self.bytesize = bytesize
             try:
-                parity = _PARITY_MAP[parity]
+                self.parity = _PARITY_MAP[parity]
             except KeyError:
+                self.parity = parity
                 pass
-            return super().__new__(cls, **params, parity=parity)
+            self.port = port
+            if ratelimit > self.baudrate:
+                self.ratelimit = None
+            else:
+                self.ratelimit = datetime.timedelta(
+                    microseconds=(1000000 // ratelimit))
+            self.stopbits = stopbits
 
     def __init__(self, config_fd: OptionalFileOrFilename = None,
                  **kwargs):
@@ -127,27 +146,41 @@ class Config:
         self.interface: Dict[str, Any] = {}
         self.logging: Dict[str, Any] = {}
         self.project: str
-        self.serial: NamedTuple
-
+        self.serial: SerialConfig
         self._config: Dict[str, Any] = deepcopy(self.DEFAULT)
         self.load_file(config_fd)
         self.load_dict(kwargs)
-        for key in ['colors', 'history_save', 'project', 'logging',
-                    'interface']:
+        for key in [
+                'colors', 'history_save', 'project', 'logging', 'interface']:
             setattr(self, key, self._config[key])
         self.serial = Config.SerialConfig(**self._config['serial'])
         logging_config.dictConfig(self.logging)
+
+        # Logging needs to be initialized before indicating errors
+        baudrate = self._config['serial']['baudrate']
+        ratelimit = self._config['serial']['ratelimit']
+        if ratelimit > baudrate:
+            logging.getLogger(self.__class__.__name__).warning(
+                'Rate-limit higher than the baudrate (%d v. %d), disabling',
+                ratelimit, baudrate)
 
     def load_dict(self, values: Dict[str, Any]) -> None:
         '''Load the given dictionary "values" to override the configuration
         '''
         try:
-            log_values: Dict[str, Any] = values.pop('logging')
-            log_current: Dict[str, Any] = self._config['logging']
+            log_values = values.pop('logging')
+            log_current = self._config['logging']
             self._config['logging'] = dict_update_deep(log_current, log_values)
         except KeyError:
             pass
-        for key in Config.SerialConfig._fields:
+        try:
+            serial_values = values.pop('serial')
+            serial_current = self._config['serial']
+            self._config['serial'] = dict_update_deep(serial_current,
+                                                      serial_values)
+        except KeyError:
+            pass
+        for key in Config.SerialConfig.FIELDS:
             try:
                 self._config['serial'][key] = values.pop(key)
             except KeyError:
